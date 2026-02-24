@@ -175,3 +175,44 @@ When implementing features:
 - Always reference the Linear ticket in the PR description,
   use `https://linear.app/n8n/issue/[TICKET-ID]`
 - always link to the github issue if mentioned in the linear ticket.
+
+## Cloud-specific instructions
+
+### Environment prerequisites
+
+- Node.js 24 is installed via nvm and set as default (`nvm alias default 24`).
+- pnpm 10.22.0 is activated via corepack (`corepack enable && corepack prepare pnpm@10.22.0 --activate`).
+- No external services (PostgreSQL, Redis, Docker) are required for default development; SQLite is used by default.
+
+### Running the dev server
+
+Start backend and frontend separately for best results in the cloud VM:
+
+```bash
+# Terminal 1: Backend (port 5678)
+cd packages/cli && pnpm dev
+
+# Terminal 2: Frontend (port 8080)
+cd packages/frontend/editor-ui && pnpm dev
+```
+
+The backend serves the API on `:5678`; the frontend Vite dev server proxies to it and serves on `:8080`. First-time startup requires creating an owner account via the setup wizard at `http://localhost:8080`.
+
+### Memory constraints
+
+Running `pnpm lint` or `pnpm typecheck` across all packages in parallel can OOM in memory-constrained VMs. Run these per-package instead:
+
+```bash
+cd packages/cli && pnpm lint
+cd packages/frontend/editor-ui && pnpm lint
+```
+
+Similarly, prefer running tests per-package rather than `pnpm test` at root.
+
+### Build before lint/typecheck
+
+After `pnpm install`, you must run `pnpm build` before lint or typecheck will work, since packages depend on each other's build outputs. See CONTRIBUTING.md and the "Essential Commands" section above for details.
+
+### Clean database
+
+To start with a fresh database, delete `~/.n8n` or set `N8N_USER_FOLDER` to a different directory (see CONTRIBUTING.md).
