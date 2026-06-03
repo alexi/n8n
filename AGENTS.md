@@ -216,3 +216,43 @@ After `pnpm install`, you must run `pnpm build` before lint or typecheck will wo
 ### Clean database
 
 To start with a fresh database, delete `~/.n8n` or set `N8N_USER_FOLDER` to a different directory (see CONTRIBUTING.md).
+
+## Cursor Cloud specific instructions
+
+See also **Cloud-specific instructions** above for ports, split dev servers, and memory limits.
+
+### Node.js on PATH
+
+The VM may expose `/exec-daemon/node` (Node 22) ahead of nvm. Before `pnpm` / `node` commands, use Node 24 from nvm:
+
+```bash
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+nvm use default
+export PATH="$NVM_DIR/versions/node/$(node -v)/bin:$PATH"
+```
+
+Confirm with `node -v` (expect v24.x) and `which node` (under `~/.nvm/versions/node/...`, not `/exec-daemon/node`).
+
+### Long-running dev servers
+
+Use **tmux** (not one-shot background shells) for `pnpm dev` in `packages/cli` and `packages/frontend/editor-ui`. Typical session names: `n8n-backend`, `n8n-frontend`. Wait until `http://127.0.0.1:5678/healthz` and `http://127.0.0.1:8080/` respond before UI tests.
+
+### First build after install
+
+The VM **update script** runs `pnpm install` only. After the first install (or when build outputs are missing), run a full build once before lint, typecheck, or `pnpm start`:
+
+```bash
+pnpm build > build.log 2>&1
+tail -n 20 build.log
+```
+
+### Expected log noise
+
+Backend `pnpm dev` may log that the **Python task runner** virtualenv is missing in internal mode. That is normal for default SQLite dev; JS workflows and the editor still work.
+
+### Quick environment check (hello world)
+
+1. Owner setup at `http://localhost:8080` (or `POST /rest/owner/setup` on `:5678`).
+2. Manual Trigger → Edit Fields (Set) workflow, execute from the editor or `POST /rest/workflows/:id/run` with full `workflowData` from `GET /rest/workflows/:id`.
+3. Confirm execution `status: success` in the UI or via `GET /rest/executions/:id`.
